@@ -4,6 +4,7 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var mvcexpress = require('../index');
 
 var index = require('./routes/index');
 var users = require('./routes/users');
@@ -22,7 +23,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', require('../index'));
+app.use('/', mvcexpress({ /* cutom services that will be injected in controller functions */ }));
 app.use('/', index);
 app.use('/users', users);
 

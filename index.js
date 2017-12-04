@@ -6,6 +6,14 @@ var util = require('util');
 var fExists = util.promisify(fs.exists);
 const assert = require('assert');
 
+const servicesToInject = {
+    view: function (viewName, model) {
+        return (res) => {
+            return res.render(viewName, model);
+        }
+    }
+}
+
 router.all('/:controller?/:action?', async (req, res, next) => {
     const p = path.parse(req.url);
     if (p.ext) {
@@ -16,7 +24,7 @@ router.all('/:controller?/:action?', async (req, res, next) => {
     const actionName = req.params.action ? req.params.action.toLowerCase() : "index";
     try {
         const controllerPath = path.format({
-            dir: path.join(process.cwd(), 'controllers'),
+            dir: path.join(process.cwd(), req.baseUrl || req.originalUrl, 'controllers'),
             name: controllerName.toLowerCase(),
             ext: '.js'
         });
@@ -24,13 +32,9 @@ router.all('/:controller?/:action?', async (req, res, next) => {
         var exists = await fExists(controllerPath);
         if (!exists) return next();
 
-        const routeInfo = {
-            controller: controllerName,
-            action: actionName
-        }
         const controllerModule = require(controllerPath);
         let controllerInstance = typeof controllerModule === "function"
-            ? new controllerModule(routeInfo)
+            ? new controllerModule(servicesToInject)
             : controllerModule;
 
         const action = controllerInstance[actionName] || controllerInstance.catchAll;
@@ -50,4 +54,8 @@ router.all('/:controller?/:action?', async (req, res, next) => {
     }
 });
 
-module.exports = router;
+module.exports = (services = {}) => {
+    Object.assign(servicesToInject, services);
+
+    return router;
+};

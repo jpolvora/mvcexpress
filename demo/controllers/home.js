@@ -1,10 +1,4 @@
-function view(viewName, model) {
-    return function(res) {
-        res.render(viewName, model);
-    }
-}
-
-module.exports = function (routeInfo) {
+module.exports = function ({ view }) {
     return {
         catchAll: (req) => {
             /* returning a function that accepts res parameter (the response object from express) */
@@ -14,7 +8,7 @@ module.exports = function (routeInfo) {
         },
 
         index: (req) => {
-           return view("index", { title: "express..." })
+            return view("index", { title: "express..." })
         },
 
         about: (req) => {
