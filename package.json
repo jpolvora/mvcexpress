@@ -1,0 +1,28 @@
+{
+  "name": "mvc",
+  "version": "0.0.1",
+  "description": "mvc for nodejs express",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jpolvora/mvcexpress.git"
+  },
+  "keywords": [
+    "mvc",
+    "express",
+    "node",
+    "nodejs"
+  ],
+  "author": "jpolvora@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jpolvora/mvcexpress/issues"
+  },
+  "homepage": "https://github.com/jpolvora/mvcexpress#readme",
+  "dependencies": {
+    "express": "^4.16.2"
+  }
+}
