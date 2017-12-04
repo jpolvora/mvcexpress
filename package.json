@@ -10,6 +10,11 @@
     "type": "git",
     "url": "git+https://github.com/jpolvora/mvcexpress.git"
   },
+  "files": [
+    "index.js",
+    "package.json",
+    "README.md"
+  ],
   "keywords": [
     "mvc",
     "express",
