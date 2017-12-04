@@ -28,7 +28,7 @@ module.exports = class {
     }
 
     async promise(req) {
-        await dataService()
+        await dataService() 
         return "promise success!"
     }
 }

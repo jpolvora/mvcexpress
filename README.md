@@ -1,29 +1,32 @@
 # mvcexpress
 A Convention Over Configuration MVC Framework on top of Express for Node.js
 
-# Install
+# install
 ```js
 npm install --save jpolvora/mvcexpress
 ```
 
-# Configure
-`app.js`
+# enable
 ```js
-const mvcexpress = require('mvcexpress')
-app.use('/', mvcexpress({
-    /* inject services here */)
-    //services will be injected in controllers contructor
-})
+var express = require('express')
+var app = express()
+var mvc = require('mvcexpress')
+app.use('/', mvc());
 ```
 
-# Usage
-Create a folder named `controllers` at root path of your express application. Then place your controllers inside this folder. Remember to use always lowercase names for the controllers.
+# conventions
 
-The default route is: `/{controllerName}/{actionName}`
+Controllers folder must be in root project: `{root}/controllers`
+
+Routes defaults to `{mountPath}/{controllerName}/{actionName}` where `mountPath` is the path where the middleware was mounted in express.
 
 The default controllerName is `home`.
 
 The default actionName is `index`.
+
+# Usage
+
+Create a folder named `controllers` at root path of your express application. Then place your controllers inside this folder. Remember to use always lowercase names for the controllers.
 
 This means that the framework will search for a module at `/controllers/home.js`.
 
