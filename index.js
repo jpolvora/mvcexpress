@@ -13,7 +13,7 @@ function toCamelCase(str) {
 }
 
 const defaultOptions = {
-    useDefaultAction: false,
+    useDefaultAction: true,
     enableHooks: false
 }
 
@@ -37,7 +37,14 @@ const activeHooks = {
 
 const servicesToInject = {
     view: function (viewName, model) {
-        return (req, res) => res.render(viewName, model);
+        return (req, res) => {
+            if (typeof viewName !== "string") {
+                model = viewName;
+                const { controller, action } = req.mvcexpress;
+                viewName = controller + "/" + action;
+            }
+            res.render(viewName, model)
+        }
     },
     redirect: function (url, statusCode = 302) {
         return (req, res) => res.redirect(statusCode, url);
@@ -112,10 +119,15 @@ router.all('/:controller?/:action?', async (req, res, next) => {
             }
         }
 
+        req.mvcexpress = Object.assign({}, {
+            controller: controllerName,
+            action: selectedActionName,
+            originalAction: actionName
+        })
         //create a default action that renders a view that has the same name of the action.
         if (!actionInstance && defaultOptions.useDefaultAction) {
             actionInstance = function () {
-                return ctorParams.view(actionName, {});
+                return ctorParams.view({});
             }
         }
 
