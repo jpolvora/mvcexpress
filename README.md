@@ -1,7 +1,5 @@
 # mvcexpress
-Mvc Structure for Express and Node.js
-
-Convention over configuration.
+A Convention Over Configuration MVC Framework on top of Express for Node.js
 
 # Install
 ```js
@@ -29,26 +27,33 @@ The default actionName is `index`.
 
 This means that the framework will search for a module at `/controllers/home.js`.
 
+The names of the actions can be derived by the request.method in camelCase:
+```
+POST /users/create
+controller: users
+action: create
+method: POST
+
+Will resolve to: 
+controller: /controllers/users.js
+possible action names: [postCreate, create, catchAll]
+```
+
 Here is an example of a controller:
 
 `/controllers/home.js`
 
 ```js
-//view is injected by default. It's a helper method that render templates using res.render(viewName, model)
-module.exports = function ( { view } ) {
+module.exports = function ( { view, redirect, json, content, raw  } ) {
     return {
-        /* path: /home/index or /  */
         index: (req) => {
            return view("index", { title: "express..." })
         },
-        /* path: /home/about  */
         about: (req) => {
             /* returning a string that will be rendered by res.send */
             return "I'm about page."
         },
-        /* path: /home/{any}  */
         catchAll: (req) => {
-        /* returning a function that accepts res parameter (the response object from express) */
             return function (res) {
                 res.send("When an action is not found, the catchAll enters in action.");
             }
@@ -74,19 +79,18 @@ module.exports = {
     index: function(req) {
         return "Welcome to /users/index route."
     },
-    //users/create
-    create: function(req) {
-        if (req.method === "POST") {
-            let form = req.body;
-            fakeDataService.saveUser(form).then((result) => {
-                return (res) => {
-                    res.status(201); //created
-                }
-            });
-        } else {
+    //GET users/create
+    getCreate: function(req) {
             return (res) => {
                 res.render('myview', {})
             }
+    },
+    postCreate: async function(req) {
+        let form = req.body;
+        await fakeDataService.saveUser(form);
+
+        return (res) => {
+            res.status(201); //created
         }
     }
 }

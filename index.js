@@ -6,30 +6,36 @@ var util = require('util');
 var fExists = util.promisify(fs.exists);
 const assert = require('assert');
 
+function toCamelCase(str) {
+    const [first, ...acc] = str.replace(/[^\w\d]/g, ' ').split(/\s+/);
+    return first.toLowerCase() + acc.map(x => x.charAt(0).toUpperCase()
+        + x.slice(1).toLowerCase()).join('');
+}
+
 const servicesToInject = {
     view: function (viewName, model) {
-        return (res) => res.render(viewName, model);
+        return (req, res) => res.render(viewName, model);
     },
     redirect: function (url, statusCode = 302) {
-        return (res) => res.redirect(statusCode, url);
+        return (req, res) => res.redirect(statusCode, url);
     },
     json: function (str) {
-        return (res) => res.json(str);
+        return (req, res) => res.json(str);
     },
     content: function (raw, contentType = "text/html") {
-        return (res) => {
+        return (req, res) => {
             res.header("Content-Type", contentType);
             res.send(raw);
         }
     },
     status: function (statusCode = 200) {
-        return (res) => res.status(statusCode);
+        return (req, res) => res.status(statusCode);
     },
-    notfound: function () {
-        return res => res.status(404);
+    notfound: function (msg = "") {
+        return (req, res) => res.status(404);
     },
     raw: function (callback) {
-        return (res) => callback(res);
+        return callback;
     }
 }
 
@@ -52,20 +58,39 @@ router.all('/:controller?/:action?', async (req, res, next) => {
         if (!exists) return next();
 
         const controllerModule = require(controllerPath);
+        const ctorParams = Object.assign({}, servicesToInject);
+
         let controllerInstance = typeof controllerModule === "function"
-            ? new controllerModule(servicesToInject)
+            ? new controllerModule(ctorParams)
             : controllerModule;
 
-        const action = controllerInstance[actionName] || controllerInstance.catchAll;
+        const actionNames = [
+            toCamelCase([req.method, actionName].join(' ')),
+            toCamelCase(actionName),
+            "catchAll"
+        ]
+
+        let action;
+        for (let i = 0; i < actionNames.length; i++) {
+            let actionName = actionNames[i];
+            if (controllerInstance[actionName]) {
+                action = controllerInstance[actionName];
+                break;
+            }
+        }
+
         assert.ok(typeof action === "function", "action must be a Function: " + util.inspect(action));
 
+        //the idea here is avoid passing response object to actions. This prevents the consumer acidentally write output too early.
+        //instead, let the well formed actionresults do the job to write to response.
+        //so the action just return an actionresult and let the framework do the job. 
         const actionResult = action(req);
         assert.ok(typeof actionResult === "string" || typeof actionResult === "function", "action must return String or Function")
 
         if (typeof actionResult === "string") {
             return res.send(actionResult);
         } else if (typeof actionResult === "function") {
-            const result = await actionResult(res);
+            const result = await actionResult(req, res);
             return result;
         }
     } catch (error) {
@@ -77,4 +102,4 @@ module.exports = (services = {}) => {
     Object.assign(servicesToInject, services);
 
     return router;
-};
+}
