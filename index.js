@@ -84,7 +84,7 @@ router.all('/:controller?/:action?', async (req, res, next) => {
         //the idea here is avoid passing response object to actions. This prevents the consumer acidentally write output too early.
         //instead, let the well formed actionresults do the job to write to response.
         //so the action just return an actionresult and let the framework do the job. 
-        const actionResult = action(req);
+        const actionResult = action.call(controllerInstance, req);
         assert.ok(typeof actionResult === "string" || typeof actionResult === "function", "action must return String or Function")
 
         if (typeof actionResult === "string") {

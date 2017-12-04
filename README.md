@@ -62,6 +62,34 @@ module.exports = function ( { view, redirect, json, content, raw  } ) {
 }
 ```
 
+You can use es6 class syntax:
+```js
+module.exports = class {
+    constructor(services) {
+        this.view = services.view
+        this.redirect = services.redirect
+        this.dataService = require('dataService')
+    }
+
+    index(req) {
+        return this.view('index', {title: "hello world!"})
+    }
+
+    //GET /home/contact
+    getContact(req) {
+        return this.view('contactForm', { title: 'contact'})
+    }
+
+    //POST /home/contact
+    postContact(req) {
+        let self = this;
+        return dataService.save(req.body).then(() => {
+            self.redirect('/home/success')
+        })
+    }
+}
+```
+
 # Demo application
 Clone this repo, go to folder /demo and run `npm install`.
 
