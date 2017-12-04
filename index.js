@@ -8,9 +8,28 @@ const assert = require('assert');
 
 const servicesToInject = {
     view: function (viewName, model) {
+        return (res) => res.render(viewName, model);
+    },
+    redirect: function (url, statusCode = 302) {
+        return (res) => res.redirect(statusCode, url);
+    },
+    json: function (str) {
+        return (res) => res.json(str);
+    },
+    content: function (raw, contentType = "text/html") {
         return (res) => {
-            return res.render(viewName, model);
+            res.header("Content-Type", contentType);
+            res.send(raw);
         }
+    },
+    status: function (statusCode = 200) {
+        return (res) => res.status(statusCode);
+    },
+    notfound: function () {
+        return res => res.status(404);
+    },
+    raw: function (callback) {
+        return (res) => callback(res);
     }
 }
 
@@ -24,7 +43,7 @@ router.all('/:controller?/:action?', async (req, res, next) => {
     const actionName = req.params.action ? req.params.action.toLowerCase() : "index";
     try {
         const controllerPath = path.format({
-            dir: path.join(process.cwd(), req.baseUrl || req.originalUrl, 'controllers'),
+            dir: path.join(process.cwd(), 'controllers'),
             name: controllerName.toLowerCase(),
             ext: '.js'
         });
