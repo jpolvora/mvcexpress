@@ -1,6 +1,6 @@
 {
-  "name": "mvc",
-  "version": "0.0.1",
+  "name": "mvcexpress",
+  "version": "0.0.2",
   "description": "mvc for nodejs express",
   "main": "index.js",
   "scripts": {
