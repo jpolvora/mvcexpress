@@ -37,7 +37,7 @@ const activeHooks = {
 
 const servicesToInject = {
     view: function (viewName, model) {
-        return (req, res) => {
+        return (req, res, next) => {
             if (typeof viewName !== "string") {
                 model = viewName;
                 const { controller, action } = req.mvcexpress;
@@ -153,7 +153,7 @@ router.all('/:controller?/:action?', async (req, res, next) => {
         }
 
         if (typeof actionResult === "function") {
-            await actionResult(req, res);
+            await actionResult(req, res, next);
         } else if (typeof actionResult === "string") {
             res.send(actionResult);
         }
