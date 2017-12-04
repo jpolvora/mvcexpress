@@ -12,6 +12,29 @@ function toCamelCase(str) {
         + x.slice(1).toLowerCase()).join('');
 }
 
+const defaultOptions = {
+    useDefaultAction: false,
+    enableHooks: false
+}
+
+const activeHooks = {
+    controllerCreated: function (controllerInstance) {
+        console.log(`Controller Created: ${controllerInstance}`)
+    },
+    beforeExecuteAction: function (controllerInstance, actionName) {
+        console.log(`Before Execute Action: ${actionName} on controller ${controllerInstance}`)
+    },
+    afterExecuteAction: function (controllerInstance, actionName, actionResultType) {
+        console.log(`After Execute Action: ${actionName} on controller ${controllerInstance}: ${actionResultType}`)
+    },
+    beforeExecuteResult: function () {
+        console.log('beforeExecuteResult')
+    },
+    afterExecuteResult: function () {
+        console.log('afterExecuteResult')
+    }
+}
+
 const servicesToInject = {
     view: function (viewName, model) {
         return (req, res) => res.render(viewName, model);
@@ -64,42 +87,78 @@ router.all('/:controller?/:action?', async (req, res, next) => {
             ? new controllerModule(ctorParams)
             : controllerModule;
 
+        controllerInstance.toString = function () {
+            return controllerName;
+        }
+
+        if (defaultOptions.enableHooks && typeof activeHooks.controllerCreated === "function") {
+            activeHooks.controllerCreated(controllerInstance)
+        }
+
         const actionNames = [
             toCamelCase([req.method, actionName].join(' ')),
             toCamelCase(actionName),
             "catchAll"
         ]
 
-        let action;
+        let selectedActionName = actionName;
+        let actionInstance;
         for (let i = 0; i < actionNames.length; i++) {
-            let actionName = actionNames[i];
-            if (controllerInstance[actionName]) {
-                action = controllerInstance[actionName];
+            let currentActionName = actionNames[i];
+            if (controllerInstance[currentActionName]) {
+                actionInstance = controllerInstance[currentActionName];
+                selectedActionName = currentActionName;
                 break;
             }
         }
 
-        assert.ok(typeof action === "function", "action must be a Function: " + util.inspect(action));
+        //create a default action that renders a view that has the same name of the action.
+        if (!actionInstance && defaultOptions.useDefaultAction) {
+            actionInstance = function () {
+                return ctorParams.view(actionName, {});
+            }
+        }
+
+        assert.ok(typeof actionInstance === "function", "action must be a Function: " + util.inspect(actionInstance));
+
+        if (defaultOptions.enableHooks && typeof activeHooks.beforeExecuteAction === "function") {
+            activeHooks.beforeExecuteAction(controllerInstance, selectedActionName);
+        }
 
         //the idea here is avoid passing response object to actions. This prevents the consumer acidentally write output too early.
         //instead, let the well formed actionresults do the job to write to response.
         //so the action just return an actionresult and let the framework do the job. 
-        const actionResult = await action.call(controllerInstance, req);
+        const actionResult = await actionInstance.call(controllerInstance, req);
+
+        if (defaultOptions.enableHooks && typeof activeHooks.afterExecuteAction === "function") {
+            activeHooks.afterExecuteAction(controllerInstance, selectedActionName, typeof actionResult);
+        }
+
         assert.ok(typeof actionResult === "string" || typeof actionResult === "function", "action must return String or Function")
 
-        if (typeof actionResult === "string") {
-            return res.send(actionResult);
-        } else if (typeof actionResult === "function") {
-            const result = await actionResult(req, res);
-            return result;
+        if (defaultOptions.enableHooks && typeof activeHooks.beforeExecuteResult === "function") {
+            activeHooks.beforeExecuteResult(controllerInstance, selectedActionName);
         }
+
+        if (typeof actionResult === "function") {
+            await actionResult(req, res);
+        } else if (typeof actionResult === "string") {
+            res.send(actionResult);
+        }
+
+        if (defaultOptions.enableHooks && typeof activeHooks.afterExecuteResult === "function") {
+            activeHooks.afterExecuteResult(controllerInstance, selectedActionName);
+        }
+
+        return console.log('end mvc.')
     } catch (error) {
         return next(error);
     }
 });
 
-module.exports = (services = {}) => {
+module.exports = (services = {}, cfg = {}, hooks = {}) => {
     Object.assign(servicesToInject, services);
-
+    Object.assign(defaultOptions, cfg);
+    Object.assign(activeHooks, hooks);
     return router;
 }

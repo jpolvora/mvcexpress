@@ -1,7 +1,7 @@
 {
   "name": "mvcexpress",
-  "version": "0.3.0",
-  "description": "A Convention Over Configuration MVC Framework on top of Express Framework for Node.js",
+  "version": "0.4.0",
+  "description": "A Convention Over Configuration MVC middleware on top of Express Framework for Node.js",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
