@@ -58,8 +58,14 @@ const servicesToInject = {
             res.send(raw);
         }
     },
-    status: function (statusCode = 200) {
-        return (req, res) => res.status(statusCode);
+    status: function (statusCode = 200, objOrMsg = "") {
+        return (req, res) => {
+            res.status(statusCode);
+            if (objOrMsg) {
+                res.send(objOrMsg)
+            }
+            res.end();
+        }
     },
     notfound: function (msg = "") {
         return (req, res) => res.status(404);
@@ -70,9 +76,9 @@ const servicesToInject = {
 }
 
 router.all('/:controller?/:action?', async (req, res, next) => {
-    console.log(req.path);
     const p = path.parse(req.path);
     if (p.ext) {
+        console.log("mvcexpress ignored path: " + req.path);
         return next()
     }
 
@@ -125,6 +131,7 @@ router.all('/:controller?/:action?', async (req, res, next) => {
             action: selectedActionName,
             originalAction: actionName
         })
+
         //create a default action that renders a view that has the same name of the action.
         if (!actionInstance && defaultOptions.useDefaultAction) {
             actionInstance = function () {
@@ -141,6 +148,25 @@ router.all('/:controller?/:action?', async (req, res, next) => {
         //the idea here is avoid passing response object to actions. This prevents the consumer acidentally write output too early.
         //instead, let the well formed actionresults do the job to write to response.
         //so the action just return an actionresult and let the framework do the job. 
+
+        let canExecute = true; //true by default.
+        if (controllerInstance.canExecute) {
+            let obj = controllerInstance.canExecute;
+            if (typeof obj === "function") {
+                canExecute = await obj.call(controllerInstance, req);
+            } else {
+                canExecute = obj; //whatever obj returns true or false
+            }
+        }
+
+        //if (returned obj is a function, this will be the actual result.)
+        if (typeof canExecute === "function") {
+            return canExecute.call(controllerInstance, req, res);
+        } else if (!canExecute) {
+            console.log("Cannot execute: canExecute returned a falsy result.")
+            return next();
+        }
+
         const actionResult = await actionInstance.call(controllerInstance, req);
 
         if (defaultOptions.enableHooks && typeof activeHooks.afterExecuteAction === "function") {
