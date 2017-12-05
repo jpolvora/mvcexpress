@@ -70,7 +70,8 @@ const servicesToInject = {
 }
 
 router.all('/:controller?/:action?', async (req, res, next) => {
-    const p = path.parse(req.url);
+    console.log(req.path);
+    const p = path.parse(req.path);
     if (p.ext) {
         return next()
     }
