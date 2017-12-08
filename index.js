@@ -3,7 +3,6 @@ var router = express.Router();
 var path = require('path');
 var fs = require('fs');
 var util = require('util');
-var fExists = util.promisify(fs.exists);
 const assert = require('assert');
 
 function toCamelCase(str) {
@@ -91,7 +90,7 @@ router.all('/:controller?/:action?', async (req, res, next) => {
             ext: '.js'
         });
 
-        var exists = await fExists(controllerPath);
+        var exists = fs.existsSync(controllerPath);
         if (!exists) return next();
 
         const controllerModule = require(controllerPath);
