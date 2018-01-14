@@ -12,8 +12,9 @@ function toCamelCase(str) {
 }
 
 const defaultOptions = {
-    useDefaultAction: true,
-    enableHooks: false
+    useDefaultAction: false,
+    enableHooks: process.env.NODE_ENV == "development",
+    controllersFolder: "controllers"
 }
 
 const activeHooks = {
@@ -87,7 +88,7 @@ router.all('/:controller?/:action?', async (req, res, next) => {
     const actionName = req.params.action ? req.params.action.toLowerCase() : defaultRoute.defaultActionName;
     try {
         const controllerPath = path.format({
-            dir: path.join(process.cwd(), 'controllers'),
+            dir: path.join(process.cwd(), defaultOptions.controllersFolder),
             name: controllerName.toLowerCase(),
             ext: '.js'
         });
