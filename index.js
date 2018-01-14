@@ -58,12 +58,9 @@ const servicesToInject = {
         }
     },
     status: function (statusCode = 200, objOrMsg = "") {
-        return (req, res) => {
+        return (req, res, next) => {
             res.status(statusCode);
-            if (objOrMsg) {
-                res.send(objOrMsg)
-            }
-            res.end();
+            return next({ status: statusCode });
         }
     },
     notfound: function (msg = "") {
@@ -74,6 +71,11 @@ const servicesToInject = {
     }
 }
 
+let defaultRoute = {
+    defaultControllerName: "home",
+    defaultActionName: "index"
+}
+
 router.all('/:controller?/:action?', async (req, res, next) => {
     const p = path.parse(req.path);
     if (p.ext) {
@@ -81,8 +83,8 @@ router.all('/:controller?/:action?', async (req, res, next) => {
         return next()
     }
 
-    const controllerName = req.params.controller ? req.params.controller.toLowerCase() : "home";
-    const actionName = req.params.action ? req.params.action.toLowerCase() : "index";
+    const controllerName = req.params.controller ? req.params.controller.toLowerCase() : defaultRoute.defaultControllerName;
+    const actionName = req.params.action ? req.params.action.toLowerCase() : defaultRoute.defaultActionName;
     try {
         const controllerPath = path.format({
             dir: path.join(process.cwd(), 'controllers'),
@@ -125,18 +127,21 @@ router.all('/:controller?/:action?', async (req, res, next) => {
             }
         }
 
+        //create a default action that renders a view that has the same name of the action.
+        if (!actionInstance) {
+            if (defaultOptions.useDefaultAction) {
+                actionInstance = function (req) {
+                    return ctorParams.view.call(controllerInstance, actionName, { req: req });
+                }
+            } else
+                return next();
+        }
+
         req.mvcexpress = Object.assign({}, {
             controller: controllerName,
             action: selectedActionName,
             originalAction: actionName
         })
-
-        //create a default action that renders a view that has the same name of the action.
-        if (!actionInstance && defaultOptions.useDefaultAction) {
-            actionInstance = function () {
-                return ctorParams.view({});
-            }
-        }
 
         assert.ok(typeof actionInstance === "function", "action must be a Function: " + util.inspect(actionInstance));
 
