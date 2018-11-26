@@ -10,8 +10,11 @@ npm install --save jpolvora/mvcexpress
 ```js
 var express = require('express')
 var app = express()
-var mvc = require('mvcexpress')
-app.use('/', mvc());
+
+const mvcexpress = require('mvcexpress')
+/* insert before your routes */
+const { registerMvc } = mvcexpress()
+app.use(registerMvc());
 ```
 
 # conventions

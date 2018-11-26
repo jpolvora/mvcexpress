@@ -197,12 +197,12 @@ module.exports = (services = {}, cfg = {}, hooks = {}) => {
     const router = express.Router();
 
     return {
-        register: function () {
+        registerMvc: function () {
             router.all('/:controller?/:action?/*', mvchandler.handler);
             return router;
         },
 
-        registerWith: function (registrationPattern) {
+        registerMvcCustom: function (registrationPattern) {
             router.all(registrationPattern, handler);
             return router;
         }

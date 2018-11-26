@@ -23,7 +23,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', mvcexpress().register());
+const { registerMvc } = mvcexpress();
+
+app.use(registerMvc());
 app.use('/', index);
 app.use('/users', users);
 
