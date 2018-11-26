@@ -1,6 +1,6 @@
 {
   "name": "mvcexpress",
-  "version": "0.4.7",
+  "version": "0.5.1",
   "description": "A Convention Over Configuration MVC middleware on top of Express Framework for Node.js",
   "main": "index.js",
   "scripts": {
@@ -13,7 +13,8 @@
   "files": [
     "index.js",
     "package.json",
-    "README.md"
+    "README.md",
+    "src/*"
   ],
   "keywords": [
     "mvc",

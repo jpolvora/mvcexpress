@@ -23,7 +23,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', mvcexpress({ /* cutom services that will be injected in controller functions */ }));
+app.use('/', mvcexpress().register());
 app.use('/', index);
 app.use('/users', users);
 
