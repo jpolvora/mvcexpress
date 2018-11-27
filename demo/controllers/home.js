@@ -19,7 +19,7 @@ module.exports = class {
     // }
 
     index(req) {
-        return this.view("index", { title: "express..." })
+        return this.view("index", { title: "mvcexpress" })
     }
 
     about(req) {
@@ -28,7 +28,7 @@ module.exports = class {
     }
 
     async promise(req) {
-        await dataService() 
+        await dataService()
         return "promise success!"
     }
 }

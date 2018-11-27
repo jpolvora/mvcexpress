@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/jpolvora/mvcexpress#readme",
   "dependencies": {
-    "express": "4.16.4"
+    "express": "4.16.4",
+    "mime": ">=1.4.1"
   }
 }

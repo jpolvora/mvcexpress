@@ -37,7 +37,7 @@ const activeHooks = {
 }
 
 const servicesToInject = {
-    view: function (viewName, model) {
+    view: function view(viewName, model) {
         return (req, res, next) => {
             if (typeof viewName !== "string") {
                 model = viewName;
@@ -47,7 +47,7 @@ const servicesToInject = {
             res.render(viewName, model)
         }
     },
-    redirect: function (url, statusCode = 302) {
+    redirect: function redirect(url, statusCode = 302) {
         return (req, res) => res.redirect(statusCode, url);
     },
     json: function (str) {
