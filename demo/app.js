@@ -24,8 +24,11 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const { registerMvc } = mvcexpress();
-
-app.use(registerMvc());
+const mvc = registerMvc();
+mvc.on('controllerCreated', () => {
+  console.log('controller created!', arguments);
+});
+app.use(mvc.router);
 app.use('/', index);
 app.use('/users', users);
 

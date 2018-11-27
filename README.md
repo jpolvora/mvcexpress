@@ -14,7 +14,11 @@ var app = express()
 const mvcexpress = require('mvcexpress')
 /* insert before your routes */
 const { registerMvc } = mvcexpress()
-app.use(registerMvc());
+const mvc = registerMvc();
+mvc.on('controllerCreated', function() {
+    console.log('some controller was created', arguments)
+})
+app.use(mvc.router);
 ```
 
 # conventions

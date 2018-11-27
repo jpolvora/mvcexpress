@@ -1,8 +1,10 @@
+const debug = require('debug')('mvcexpress');
 var express = require('express');
 var path = require('path');
 var fs = require('fs');
 var util = require('util');
 const assert = require('assert');
+const EventEmitter = require('events');
 
 function toCamelCase(str) {
     const [first, ...acc] = str.replace(/[^\w\d]/g, ' ').split(/\s+/);
@@ -18,19 +20,19 @@ const defaultOptions = {
 
 const activeHooks = {
     controllerCreated: function (controllerInstance) {
-        console.log(`Controller Created: ${controllerInstance}`)
+        debug(`Controller Created: ${controllerInstance}`)
     },
     beforeExecuteAction: function (controllerInstance, actionName) {
-        console.log(`Before Execute Action: ${actionName} on controller ${controllerInstance}`)
+        debug(`Before Execute Action: ${actionName} on controller ${controllerInstance}`)
     },
     afterExecuteAction: function (controllerInstance, actionName, actionResultType) {
-        console.log(`After Execute Action: ${actionName} on controller ${controllerInstance}: ${actionResultType}`)
+        debug(`After Execute Action: ${actionName} on controller ${controllerInstance}: ${actionResultType}`)
     },
     beforeExecuteResult: function () {
-        console.log('beforeExecuteResult')
+        debug('beforeExecuteResult')
     },
     afterExecuteResult: function () {
-        console.log('afterExecuteResult')
+        debug('afterExecuteResult')
     }
 }
 
@@ -71,20 +73,23 @@ const servicesToInject = {
     }
 }
 
-let defaultRoute = {
+const defaultRoute = {
     defaultControllerName: "home",
     defaultActionName: "index"
 }
 
-class MvcHandler {
-    constructor(options) {
-        this.opts = Object.assign({}, defaultOptions, options || {});
+class MvcHandler extends EventEmitter {
+    constructor(router, options = {}) {
+        super();
+        this.router = router;
+        this.options = Object.assign({}, defaultOptions, options || {});
     }
 
     async handler(req, res, next) {
+        var self = this;
         const p = path.parse(req.path);
         if (p.ext) {
-            console.log("mvcexpress ignored path: " + req.path);
+            debug("mvcexpress ignored path: " + req.path);
             return next();
         }
         const controllerName = req.params.controller ? req.params.controller.toLowerCase() : defaultRoute.defaultControllerName;
@@ -103,12 +108,9 @@ class MvcHandler {
             let controllerInstance = typeof controllerModule === "function"
                 ? new controllerModule(ctorParams)
                 : controllerModule;
-            controllerInstance.toString = function () {
-                return controllerName;
-            };
-            if (defaultOptions.enableHooks && typeof activeHooks.controllerCreated === "function") {
-                activeHooks.controllerCreated(controllerInstance);
-            }
+            controllerInstance.toString = () => controllerName;
+
+            self.emit('controllerCreated');
             const actionNames = [
                 toCamelCase([req.method, actionName].join(' ')),
                 toCamelCase(actionName),
@@ -140,9 +142,7 @@ class MvcHandler {
                 originalAction: actionName
             });
             assert.ok(typeof actionInstance === "function", "action must be a Function: " + util.inspect(actionInstance));
-            if (defaultOptions.enableHooks && typeof activeHooks.beforeExecuteAction === "function") {
-                activeHooks.beforeExecuteAction(controllerInstance, selectedActionName);
-            }
+            super.emit('beforeExecuteAction');
             //the idea here is avoid passing response object to actions. This prevents the consumer acidentally write output too early.
             //instead, let the well formed actionresults do the job to write to response.
             //so the action just return an actionresult and let the framework do the job. 
@@ -161,27 +161,21 @@ class MvcHandler {
                 return canExecute.call(controllerInstance, req, res);
             }
             else if (!canExecute) {
-                console.log("Cannot execute: canExecute returned a falsy result.");
+                debug("Cannot execute: canExecute returned a falsy result.");
                 return next();
             }
             const actionResult = await actionInstance.call(controllerInstance, req);
-            if (defaultOptions.enableHooks && typeof activeHooks.afterExecuteAction === "function") {
-                activeHooks.afterExecuteAction(controllerInstance, selectedActionName, typeof actionResult);
-            }
+            self.emit('afterExecuteAction');
             assert.ok(typeof actionResult === "string" || typeof actionResult === "function", "action must return String or Function");
-            if (defaultOptions.enableHooks && typeof activeHooks.beforeExecuteResult === "function") {
-                activeHooks.beforeExecuteResult(controllerInstance, selectedActionName);
-            }
+            self.emit('beforeExecuteResult', controllerInstance, selectedActionName);
             if (typeof actionResult === "function") {
-                await actionResult(req, res, next);
+                actionResult(req, res, next);
             }
             else if (typeof actionResult === "string") {
                 res.send(actionResult);
             }
-            if (defaultOptions.enableHooks && typeof activeHooks.afterExecuteResult === "function") {
-                activeHooks.afterExecuteResult(controllerInstance, selectedActionName);
-            }
-            return console.log('end mvc.');
+            self.emit('afterExecuteResult', controllerInstance, selectedActionName);
+            return debug('end mvc.');
         }
         catch (error) {
             return next(error);
@@ -190,21 +184,19 @@ class MvcHandler {
 }
 
 
-
 module.exports = (services = {}, cfg = {}, hooks = {}) => {
-
-    const mvchandler = new MvcHandler(cfg);
     const router = express.Router();
+    const mvchandler = new MvcHandler(router);
 
     return {
         registerMvc: function () {
-            router.all('/:controller?/:action?/*', mvchandler.handler);
-            return router;
+            router.all('/:controller?/:action?/*', mvchandler.handler.bind(mvchandler));
+            return mvchandler;
         },
 
         registerMvcCustom: function (registrationPattern) {
-            router.all(registrationPattern, handler);
-            return router;
+            router.all(registrationPattern, mvchandler.handler.bind(mvchandler));
+            return mvchandler;
         }
     }
 }
