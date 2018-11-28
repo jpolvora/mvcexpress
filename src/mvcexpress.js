@@ -20,6 +20,7 @@ const defaultOptions = {
 }
 
 function defaultControllerFactory(req, res, next, actions, options, controllerName, controllerModule) {
+    var self = this; //this is the mvcexpress
     if (typeof controllerModule !== "function") throw new Error("controllerModule is not a function!");
     const controllerInstance = new controllerModule();
     controllerInstance.toString = () => controllerName;
@@ -63,7 +64,12 @@ function selectActionToExecute(method, actionName, controllerInstance) {
     }
 
     if (!actionInstance) {
-        return false;
+        //action instance will be the default action if exists. otherwise, false
+        if (typeof controllerInstance[defaultOptions.defaultActionName] !== "function")
+            return false;
+
+        actionInstance = controllerInstance[defaultOptions.defaultActionName];
+
     }
 
     return {
@@ -72,7 +78,7 @@ function selectActionToExecute(method, actionName, controllerInstance) {
     };
 }
 
-class MvcHandler extends EventEmitter {
+class MvcExpress extends EventEmitter {
     constructor(options = {}) {
         super();
         this.options = Object.assign({}, defaultOptions, options);
@@ -86,8 +92,8 @@ class MvcHandler extends EventEmitter {
             debug("mvcexpress ignored path: " + req.path);
             return next();
         }
-        const controllerName = req.params.controller ? req.params.controller.toLowerCase() : self.options.defaultControllerName;
-        const actionName = req.params.action ? req.params.action.toLowerCase() : self.options.defaultActionName;
+        const controllerName = req.params[self.options.controllerToken] ? req.params[self.options.controllerToken].toLowerCase() : self.options.defaultControllerName;
+        const actionName = req.params[self.options.actionToken] ? req.params[self.options.actionToken].toLowerCase() : self.options.defaultActionName;
         try {
             const controllerPath = path.format({
                 dir: self.controllersFolder,
@@ -108,7 +114,7 @@ class MvcHandler extends EventEmitter {
                     return next();
             }
 
-            const controllerInstance = defaultControllerFactory(req, res, next, actions, self.options, controllerName, controllerModule);
+            const controllerInstance = defaultControllerFactory.call(self, req, res, next, actions, self.options, controllerName, controllerModule);
 
             self.emit('controllerCreated', controllerInstance);
 
@@ -182,18 +188,24 @@ const debugHooks = {
 }
 
 module.exports = (app, options = {}) => {
-    let mountPath = options.mountPath || '/';
+    let mountPath = options.mountPath || '/mvc/';
     if (!mountPath.startsWith('/')) mountPath = "/" + mountPath;
     if (!mountPath.endsWith('/')) mountPath = mountPath + "/";
     options.mountPath = mountPath;
-    const mvchandler = new MvcHandler(options);
-    app.use(`${mountPath}:controller?/:action?`, mvchandler.handler.bind(mvchandler));
+
+    let controllerToken = options.controllerToken || 'controller';
+    options.controllerToken = controllerToken;
+    let actionToken = options.actionToken || 'action';
+    options.actionToken = actionToken;
+
+    const mvcexpress = new MvcExpress(options);
+    app.use(`${mountPath}:${controllerToken}?/:${actionToken}?`, mvcexpress.handler.bind(mvcexpress));
     if (process.env.NODE_ENV == "development") {
-        mvchandler.on('controllerCreated', debugHooks.controllerCreated);
-        mvchandler.on('beforeExecuteAction', debugHooks.beforeExecuteAction);
-        mvchandler.on('afterExecuteAction', debugHooks.afterExecuteAction);
-        mvchandler.on('beforeExecuteResult', debugHooks.beforeExecuteResult);
-        mvchandler.on('afterExecuteResult', debugHooks.afterExecuteResult);
+        mvcexpress.on('controllerCreated', debugHooks.controllerCreated);
+        mvcexpress.on('beforeExecuteAction', debugHooks.beforeExecuteAction);
+        mvcexpress.on('afterExecuteAction', debugHooks.afterExecuteAction);
+        mvcexpress.on('beforeExecuteResult', debugHooks.beforeExecuteResult);
+        mvcexpress.on('afterExecuteResult', debugHooks.afterExecuteResult);
     }
-    return mvchandler;
+    return mvcexpress;
 }

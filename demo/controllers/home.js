@@ -10,7 +10,6 @@ function dataService() {
 module.exports = class {
 
     catchAll() {
-
         return this.redirect(`${this.options.mountPath}home/index`)
     }
 

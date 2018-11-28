@@ -3,6 +3,11 @@ A Convention Over Configuration MVC Framework on top of Express for Node.js
 
 **documentation outdated**
 
+todo:
+* model binding
+* dependency injection
+* suggestions will be appreciated
+
 # install
 ```js
 npm install --save jpolvora/mvcexpress
@@ -14,7 +19,10 @@ var express = require('express')
 var app = express()
 
 /* app will use mvcexpress as middleware*/
-const mvcexpress = require('mvcexpress')(app, {mountPath: '/'})
+const mvcoptions = {
+    mountPath: '/mvc/'
+}
+const mvcexpress = require('mvcexpress')(app, mvcoptions)
 
 mvcexpress.on('controllerCreated', (controllerInstance) => {
     console.log('controller was instantiated', controllerInstance)
@@ -26,7 +34,7 @@ mvcexpress.on('controllerCreated', (controllerInstance) => {
 
 Controllers folder must be in root project: `{root}/controllers`
 
-Routes defaults to `/{controllerName}/{actionName}/*` where `mountPath` is the path where the middleware was mounted in express.
+Routes defaults to `{mountPath}/{controllerName}/{actionName}/*` where `mountPath` is the path where the middleware was mounted in express. Defaults to /mvc/. You can change it in instantiation options.
 
 The default controllerName is `home`.
 
@@ -57,15 +65,18 @@ Here is an example of a controller:
 ```js
 module.exports = function () {
     return {
-        index: () => {
+        index: function()  {
            return this.view("index", { title: "express..." })
         },
         about: () => {
-            /* returning a string that will be rendered by res.send */
+            /* returning a string that will be rendered by res.send 
+                you can use your custom template engine
+            */
             return "I'm about page."
         },
         catchAll: () => {
-            return "When an action is not found, the catchAll enters in action."
+            // "When an action is not found, the catchAll enters in action."
+            return this.redirect('/home/index')
         }
     }
 }

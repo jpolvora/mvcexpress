@@ -22,9 +22,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const mvcexpress = require('../index')(app, { mountPath: '/mvc' });
+const mvcexpress = require('../index')(app, {
+  mountPath: '/mvc/', //defaults
+});
 mvcexpress.on('controllerCreated', (controller) => {
-  console.log('controller created!', controller);
+  console.log(`controller '${controller}' was created!`);
 });
 
 app.use('/', index);
