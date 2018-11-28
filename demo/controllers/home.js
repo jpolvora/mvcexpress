@@ -6,28 +6,24 @@ function dataService() {
     });
 }
 
+
 module.exports = class {
-    constructor(services) {
-        this.view = services.view;
+
+    catchAll() {
+
+        return this.redirect(`${this.options.mountPath}home/index`)
     }
 
-    // catchAll(req) {
-    //     /* returning a function that accepts res parameter (the response object from express) */
-    //     return function (req, res) {
-    //         res.send("When an action is not found, the catchAll enters in action.");
-    //     }
-    // }
-
-    index(req) {
+    index() {
         return this.view("index", { title: "mvcexpress" })
     }
 
-    about(req) {
+    about() {
         /* returning a string that will be rendered by res.send */
         return "I'm about page."
     }
 
-    async promise(req) {
+    async promise() {
         await dataService()
         return "promise success!"
     }

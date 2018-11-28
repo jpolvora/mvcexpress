@@ -1,6 +1,8 @@
 # mvcexpress
 A Convention Over Configuration MVC Framework on top of Express for Node.js
 
+**documentation outdated**
+
 # install
 ```js
 npm install --save jpolvora/mvcexpress
@@ -11,21 +13,20 @@ npm install --save jpolvora/mvcexpress
 var express = require('express')
 var app = express()
 
-const mvcexpress = require('mvcexpress')
-/* insert before your routes */
-const { registerMvc } = mvcexpress()
-const mvc = registerMvc();
-mvc.on('controllerCreated', function() {
-    console.log('some controller was created', arguments)
+/* app will use mvcexpress as middleware*/
+const mvcexpress = require('mvcexpress')(app, {mountPath: '/'})
+
+mvcexpress.on('controllerCreated', (controllerInstance) => {
+    console.log('controller was instantiated', controllerInstance)
 })
-app.use(mvc.router);
+
 ```
 
 # conventions
 
 Controllers folder must be in root project: `{root}/controllers`
 
-Routes defaults to `{mountPath}/{controllerName}/{actionName}` where `mountPath` is the path where the middleware was mounted in express.
+Routes defaults to `/{controllerName}/{actionName}/*` where `mountPath` is the path where the middleware was mounted in express.
 
 The default controllerName is `home`.
 
@@ -54,19 +55,17 @@ Here is an example of a controller:
 `/controllers/home.js`
 
 ```js
-module.exports = function ( { view, redirect, json, content, raw  } ) {
+module.exports = function () {
     return {
-        index: (req) => {
-           return view("index", { title: "express..." })
+        index: () => {
+           return this.view("index", { title: "express..." })
         },
-        about: (req) => {
+        about: () => {
             /* returning a string that will be rendered by res.send */
             return "I'm about page."
         },
-        catchAll: (req) => {
-            return function (res) {
-                res.send("When an action is not found, the catchAll enters in action.");
-            }
+        catchAll: () => {
+            return "When an action is not found, the catchAll enters in action."
         }
     }
 }
@@ -75,25 +74,20 @@ module.exports = function ( { view, redirect, json, content, raw  } ) {
 You can use es6 class syntax:
 ```js
 module.exports = class {
-    constructor(services) {
-        this.view = services.view
-        this.redirect = services.redirect
-        this.dataService = require('dataService')
-    }
 
-    index(req) {
+    index() {
         return this.view('index', {title: "hello world!"})
     }
 
     //GET /home/contact
-    getContact(req) {
+    getContact() {
         return this.view('contactForm', { title: 'contact'})
     }
 
     //POST /home/contact
-    postContact(req) {
+    postContact() {
         let self = this;
-        return dataService.save(req.body).then(() => {
+        return dataService.save(self.req.body).then(() => {
             self.redirect('/home/success')
         })
     }
@@ -114,11 +108,11 @@ Just create a new module inside `controllers` folder, for example:
 //In order to use services injection, use the function(services) {} format
 module.exports = {
     //users/index
-    index: function(req) {
+    index: function() {
         return "Welcome to /users/index route."
     },
     //GET users/create
-    getCreate: function(req) {
+    getCreate: function() {
             return (res) => {
                 res.render('myview', {})
             }

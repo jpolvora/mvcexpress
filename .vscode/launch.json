@@ -12,7 +12,8 @@
             "cwd": "${workspaceFolder}\\demo",
             "env": {
                 "NODE_ENV": "development",
-                "PORT": "3003"
+                "PORT": "3003",
+                "DEBUG": "mvcexpress"
             }
         }
     ]

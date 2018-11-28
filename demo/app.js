@@ -4,7 +4,6 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-var mvcexpress = require('../index');
 
 var index = require('./routes/index');
 var users = require('./routes/users');
@@ -23,12 +22,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const { registerMvc } = mvcexpress();
-const mvc = registerMvc();
-mvc.on('controllerCreated', () => {
-  console.log('controller created!', arguments);
+const mvcexpress = require('../index')(app, { mountPath: '/mvc' });
+mvcexpress.on('controllerCreated', (controller) => {
+  console.log('controller created!', controller);
 });
-app.use(mvc.router);
+
 app.use('/', index);
 app.use('/users', users);
 
