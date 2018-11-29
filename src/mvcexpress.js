@@ -1,4 +1,4 @@
-const debug = require('debug')('mvcexpress');
+const debug = require('debug')('mvcexpress:main');
 const actions = require('./actionresults');
 var path = require('path');
 var util = require('util');
@@ -94,78 +94,62 @@ class MvcExpress extends EventEmitter {
         }
         const controllerName = req.params[self.options.controllerToken] ? req.params[self.options.controllerToken].toLowerCase() : self.options.defaultControllerName;
         const actionName = req.params[self.options.actionToken] ? req.params[self.options.actionToken].toLowerCase() : self.options.defaultActionName;
+
+        const controllerPath = path.format({
+            dir: self.controllersFolder,
+            name: controllerName.toLowerCase(),
+            ext: '.js'
+        });
+
+        let controllerModule = null;
         try {
-            const controllerPath = path.format({
-                dir: self.controllersFolder,
-                name: controllerName.toLowerCase(),
-                ext: '.js'
-            });
-
-            let controllerModule = null;
-            try {
-                controllerModule = require(controllerPath);
-            } catch (error) {
-                debug(error.message || error);
-            }
-            finally {
-                if (!controllerModule)
-                    return next();
-                if (typeof controllerModule !== "function")
-                    return next();
-            }
-
-            const controllerInstance = defaultControllerFactory.call(self, req, res, next, actions, self.options, controllerName, controllerModule);
-
-            self.emit('controllerCreated', controllerInstance);
-
-            const { actionInstance, selectedActionName } = selectActionToExecute(req.method, actionName, controllerInstance);
-            if (!actionInstance) return next();
-
-            req.mvcexpress = Object.assign({}, {
-                controller: controllerName,
-                action: selectedActionName,
-                originalAction: actionName
-            });
-            assert.ok(typeof actionInstance === "function", "action must be a Function: " + util.inspect(actionInstance));
-            self.emit('beforeExecuteAction');
-            //the idea here is avoid passing response object to actions. This prevents the consumer acidentally write output too early.
-            //instead, let the well formed actionresults do the job to write to response.
-            //so the action just return an actionresult and let the framework do the job. 
-            let canExecute = true; //true by default.
-            if (controllerInstance.canExecute) {
-                let obj = controllerInstance.canExecute;
-                if (typeof obj === "function") {
-                    canExecute = await obj.call(controllerInstance, req);
-                }
-                else {
-                    canExecute = obj; //whatever obj returns true or false
-                }
-            }
-            //if (returned obj is a function, this will be the actual result.)
-            if (typeof canExecute === "function") {
-                return canExecute.call(controllerInstance);
-            }
-            else if (!canExecute) {
-                debug("Cannot execute: canExecute returned a falsy result.");
-                return next();
-            }
-            const actionResult = await actionInstance.call(controllerInstance);
-            self.emit('afterExecuteAction');
-            assert.ok(typeof actionResult === "string" || typeof actionResult === "function", "action must return String or Function");
-            self.emit('beforeExecuteResult', controllerInstance, selectedActionName);
-            if (typeof actionResult === "function") {
-                actionResult(req, res, next);
-            }
-            else if (typeof actionResult === "string") {
-                res.send(actionResult);
-            }
-            self.emit('afterExecuteResult', controllerInstance, selectedActionName);
-            return debug('end mvc.');
+            controllerModule = require(controllerPath);
+        } catch (error) {
+            debug(error.message || error);
         }
-        catch (error) {
-            debug(error.message || error)
+        finally {
+            if (!controllerModule || typeof controllerModule !== "function")
+                return next();
+        }
+
+        const controllerInstance = defaultControllerFactory.call(self, req, res, next, actions, self.options, controllerName, controllerModule);
+
+        self.emit('controllerCreated', controllerInstance);
+
+        const { actionInstance, selectedActionName } = selectActionToExecute(req.method, actionName, controllerInstance);
+        if (!actionInstance) return next();
+
+        req.mvcexpress = Object.assign({}, {
+            controller: controllerName,
+            action: selectedActionName,
+            originalAction: actionName
+        });
+        assert.ok(typeof actionInstance === "function", "action must be a Function: " + util.inspect(actionInstance));
+        self.emit('beforeExecuteAction');
+
+        let canExecute = true; //true by default.
+        if (controllerInstance.canExecute && typeof controllerInstance.canExecute === "function") {
+            debug('entering canExecute evaluation')
+            canExecute = await controllerInstance.canExecute.call(controllerInstance);
+            debug(canExecute)
+        }
+
+        if (!canExecute) {
+            debug("Cannot execute: canExecute returned a falsy result.");
             return next();
         }
+        const actionResult = await actionInstance.call(controllerInstance);
+        self.emit('afterExecuteAction');
+
+        self.emit('beforeExecuteResult', controllerInstance, selectedActionName);
+        if (typeof actionResult === "function") {
+            actionResult(req, res, next);
+        }
+        else if (typeof actionResult === "string") {
+            res.send(actionResult);
+        }
+        self.emit('afterExecuteResult', controllerInstance, selectedActionName);
+
     }
 }
 
@@ -198,9 +182,19 @@ module.exports = (app, options = {}) => {
     let actionToken = options.actionToken || 'action';
     options.actionToken = actionToken;
 
+    function fnToBind(...args) {
+        console.time('handler');
+        this.handler.call(this, ...args);
+        console.timeEnd('handler');
+    }
+
     const mvcexpress = new MvcExpress(options);
-    app.use(`${mountPath}:${controllerToken}?/:${actionToken}?`, mvcexpress.handler.bind(mvcexpress));
-    if (process.env.NODE_ENV == "development") {
+
+    const dev = process.env.NODE_ENV == "development";
+    const fn = dev ? fnToBind.bind(mvcexpress) : mvcexpress.handler.bind(mvcexpress);
+
+    app.use(`${mountPath}:${controllerToken}?/:${actionToken}?`, fn);
+    if (dev) {
         mvcexpress.on('controllerCreated', debugHooks.controllerCreated);
         mvcexpress.on('beforeExecuteAction', debugHooks.beforeExecuteAction);
         mvcexpress.on('afterExecuteAction', debugHooks.afterExecuteAction);

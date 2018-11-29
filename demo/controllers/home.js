@@ -22,6 +22,10 @@ module.exports = class {
         return "I'm about page."
     }
 
+    async canExecute() {
+        return Promise.resolve(true)
+    }
+
     async promise() {
         await dataService()
         return "promise success!"
