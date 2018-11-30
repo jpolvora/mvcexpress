@@ -11,14 +11,6 @@ function toCamelCase(str) {
         + x.slice(1).toLowerCase()).join('');
 }
 
-const defaultOptions = {
-    useDefaultAction: false,
-    enableHooks: process.env.NODE_ENV == "development",
-    controllersFolder: "controllers",
-    defaultControllerName: "home",
-    defaultActionName: "index"
-}
-
 function defaultControllerFactory(req, res, next, actions, options, controllerName, controllerModule) {
     var self = this; //this is the mvcexpress
     if (typeof controllerModule !== "function") throw new Error("controllerModule is not a function!");
@@ -49,7 +41,12 @@ function createActionNames(method, actionName) {
     return actionNames;
 }
 
+function renameFunction(fn, name) {
+    return Function("fn", "return (function " + name + "(){\n  return fn.apply(this, arguments)\n});")(fn);
+};
+
 function selectActionToExecute(method, actionName, controllerInstance) {
+    var mvcexpress = this;
     const actionNames = createActionNames(method, actionName);
     let selectedActionName = actionName;
     let actionInstance;
@@ -64,18 +61,18 @@ function selectActionToExecute(method, actionName, controllerInstance) {
     }
 
     if (!actionInstance) {
-        //action instance will be the default action if exists. otherwise, false
-        if (typeof controllerInstance[defaultOptions.defaultActionName] !== "function")
+        if (mvcexpress.options.useDefaultAction) {
+            //if there's no catchAll method on controller
+            //action instance will be the default action (index) if exists. otherwise, false
+            if (typeof controllerInstance[mvcexpress.options.defaultActionName] !== "function")
+                return false;
+
+            actionInstance = controllerInstance[mvcexpress.options.defaultActionName];
+        } else
             return false;
-
-        actionInstance = controllerInstance[defaultOptions.defaultActionName];
-
     }
 
-    return {
-        selectedActionName,
-        actionInstance
-    };
+    return renameFunction(actionInstance, selectedActionName);
 }
 
 class MvcExpress extends EventEmitter {
@@ -116,10 +113,11 @@ class MvcExpress extends EventEmitter {
 
         self.emit('controllerCreated', controllerInstance);
 
-        const { actionInstance, selectedActionName } = selectActionToExecute(req.method, actionName, controllerInstance);
+        const actionInstance = selectActionToExecute.call(this, req.method, actionName, controllerInstance);
         if (!actionInstance) return next();
+        const selectedActionName = actionInstance.name;
 
-        req.mvcexpress = Object.assign({}, {
+        self.mvcexpress = Object.assign({}, {
             controller: controllerName,
             action: selectedActionName,
             originalAction: actionName
@@ -169,6 +167,14 @@ const debugHooks = {
     afterExecuteResult: function () {
         debug('afterExecuteResult')
     }
+}
+
+const defaultOptions = {
+    useDefaultAction: false,
+    enableHooks: process.env.NODE_ENV == "development",
+    controllersFolder: "controllers",
+    defaultControllerName: "home",
+    defaultActionName: "index"
 }
 
 module.exports = (app, options = {}) => {

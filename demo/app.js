@@ -23,6 +23,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const mvcexpress = require('../index')(app, {
+  useDefaultAction: true, //use default action from controller when action method doesn't exists
   mountPath: '/mvc/', //defaults
 });
 mvcexpress.on('controllerCreated', (controller) => {

@@ -9,9 +9,9 @@ function dataService() {
 
 module.exports = class {
 
-    catchAll() {
-        return this.redirect(`${this.options.mountPath}home/index`)
-    }
+    // catchAll() {
+    //     return this.redirect(`${this.options.mountPath}home/index`)
+    // }
 
     index() {
         return this.view("index", { title: "mvcexpress" })
