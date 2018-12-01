@@ -1,1 +1,1 @@
-module.exports = require('./src/mvcexpress')
+module.exports = require('./src/mvcexpress');

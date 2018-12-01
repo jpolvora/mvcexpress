@@ -13,7 +13,7 @@
             "env": {
                 "NODE_ENV": "development",
                 "PORT": "3003",
-                "DEBUG": "*"
+                "DEBUG": "mvcexpress"
             }
         }
     ]

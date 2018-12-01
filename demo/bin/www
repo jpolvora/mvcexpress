@@ -8,6 +8,16 @@ var app = require('../app');
 var debug = require('debug')('mvcexpress:server');
 var http = require('http');
 
+process.on('unhandledRejection', (reason, p) => {
+  console.log('Unhandled Rejection at:', p, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error(err);
+  process.exit(1);
+});
+
+
 /**
  * Get port from environment and store in Express.
  */
