@@ -1,4 +1,4 @@
-function dataService() {
+function dataService () {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       resolve('ok');
@@ -9,29 +9,29 @@ function dataService() {
 let maybe = false;
 
 module.exports = class {
-  constructor() {
-    //this.registerFilter("MyCustomFilter?");
+  constructor () {
+    // this.registerFilter("MyCustomFilter?");
     var self = this;
     this.authorize = () => {
-      //set the user permissions
+      // set the user permissions
       maybe = !maybe;
       return new Promise((resolve) => {
-        self.authorized = maybe; //fake
+        self.authorized = maybe; // fake
         return resolve(true);
-      })
-    }
+      });
+    };
   }
 
   // canExecute(selectedActionName, actionName) {
   //   return this.authorized || selectedActionName === "about";
   // }
 
-  index() {
+  index () {
     var self = this;
     return self.authorize().then(() => {
       console.log(self.authorized);
-      if (self.authorized) return this.view("index", { title: 'mvcexpress: is authorized' });
-      return "i am not authorized!";
+      if (self.authorized) return this.view('index', { title: 'mvcexpress: is authorized' });
+      return 'i am not authorized!';
     });
 
     // const { username } = this.req.fields;
@@ -39,17 +39,17 @@ module.exports = class {
     // return this.view('index', { title: 'mvcexpress' });
   }
 
-  about() {
+  about () {
     /* returning a string that will be rendered by res.send */
     return "I'm about page.";
   }
 
-  async promise() {
+  async promise () {
     await dataService();
     return 'promise success!';
   }
 
-  catchAll() {
-    return this.redirect(`${this.options.mountPath}home/index`)
+  catchAll () {
+    return this.redirect(`${this.options.mountPath}home/index`);
   }
 };

@@ -6,7 +6,7 @@ const EventEmitter = require('events');
 const actions = require('./actionresults');
 const { renameFunction, toCamelCase } = require('./utils');
 
-function defaultControllerFactory(req, res, next, actions, options, controllerName, ControllerModule) {
+function defaultControllerFactory (req, res, next, actions, options, controllerName, ControllerModule) {
   var self = this; // this is the mvcexpress
   if (typeof ControllerModule !== 'function') throw new Error('controllerModule is not a function!');
   const controllerInstance = new ControllerModule();
@@ -28,7 +28,7 @@ function defaultControllerFactory(req, res, next, actions, options, controllerNa
   return controllerInstance;
 }
 
-function createActionNames(method, actionName) {
+function createActionNames (method, actionName) {
   const actionNames = [
     toCamelCase([method, actionName].join(' ')),
     toCamelCase(actionName),
@@ -38,7 +38,7 @@ function createActionNames(method, actionName) {
   return actionNames;
 }
 
-function selectActionToExecute(method, actionName, controllerInstance) {
+function selectActionToExecute (method, actionName, controllerInstance) {
   var mvcexpress = this;
   const actionNames = createActionNames(method, actionName);
   let selectedActionName = actionName;
@@ -67,7 +67,7 @@ function selectActionToExecute(method, actionName, controllerInstance) {
 }
 
 class MvcExpress extends EventEmitter {
-  constructor(options = {}) {
+  constructor (options = {}) {
     super();
     this.options = Object.assign({}, defaultOptions, options);
 
@@ -76,7 +76,7 @@ class MvcExpress extends EventEmitter {
   }
 
   /* this is the function that will be bound to the router */
-  async handler(req, res, next) {
+  async handler (req, res, next) {
     var self = this;
     const p = path.parse(req.path);
     if (p.ext) {
