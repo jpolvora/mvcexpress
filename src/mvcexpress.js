@@ -69,10 +69,10 @@ function selectActionToExecute(method, actionName, controllerInstance) {
 class MvcExpress extends EventEmitter {
   constructor(options = {}) {
     super();
-    this.options = Object.assign({}, defaultOptions, options);
+    this.options = Object.assign({}, options);
 
     // executes once per instantiation
-    this.controllersFolder = path.join(process.cwd(), this.options.controllersFolder);
+    this.controllersFolder = path.join(require.main.path, this.options.controllersFolder);
   }
 
   /* this is the function that will be bound to the router */
@@ -141,57 +141,5 @@ class MvcExpress extends EventEmitter {
   }
 }
 
-const debugHooks = {
-  controllerCreated: function (controllerInstance) {
-    debug(`Controller Created: ${controllerInstance}`);
-  },
-  beforeExecuteAction: function (controllerInstance, actionName) {
-    debug(`Before Execute Action: ${actionName} on controller ${controllerInstance}`);
-  },
-  afterExecuteAction: function (controllerInstance, actionName, actionResultType) {
-    debug(`After Execute Action: ${actionName} on controller ${controllerInstance}: ${actionResultType}`);
-  },
-  beforeExecuteResult: function () {
-    debug('beforeExecuteResult');
-  },
-  afterExecuteResult: function () {
-    debug('afterExecuteResult');
-  }
-};
 
-const defaultOptions = {
-  useDefaultAction: false,
-  enableHooks: process.env.NODE_ENV === 'development',
-  controllersFolder: 'controllers',
-  defaultControllerName: 'home',
-  defaultActionName: 'index',
-  defaultMountPath: '/mvc/',
-  defaultControllerToken: 'controller',
-  defaultActionToken: 'action'
-};
-
-module.exports = (app, options = {}) => {
-  let mountPath = options.mountPath || defaultOptions.defaultMountPath;
-  if (!mountPath.startsWith('/')) mountPath = '/' + mountPath;
-  if (!mountPath.endsWith('/')) mountPath = mountPath + '/';
-  options.mountPath = mountPath;
-
-  let controllerToken = options.controllerToken || defaultOptions.defaultControllerToken;
-  options.controllerToken = controllerToken;
-  let actionToken = options.actionToken || defaultOptions.defaultActionToken;
-  options.actionToken = actionToken;
-
-  const mvcexpress = new MvcExpress(options);
-
-  const dev = process.env.NODE_ENV === 'development';
-
-  app.use(`${mountPath}:${controllerToken}?/:${actionToken}?`, mvcexpress.handler.bind(mvcexpress));
-  if (dev) {
-    mvcexpress.on('controllerCreated', debugHooks.controllerCreated);
-    mvcexpress.on('beforeExecuteAction', debugHooks.beforeExecuteAction);
-    mvcexpress.on('afterExecuteAction', debugHooks.afterExecuteAction);
-    mvcexpress.on('beforeExecuteResult', debugHooks.beforeExecuteResult);
-    mvcexpress.on('afterExecuteResult', debugHooks.afterExecuteResult);
-  }
-  return mvcexpress;
-};
+module.exports = MvcExpress
