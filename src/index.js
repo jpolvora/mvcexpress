@@ -1,6 +1,6 @@
 const MvcExpress = require('./mvcexpress')
 
-const defaultOptions = {  
+const defaultOptions = {
   useDefaultAction: true,
   enableHooks: true,
   controllersFolder: 'controllers',
@@ -9,10 +9,10 @@ const defaultOptions = {
   mountPath: '/',
   controllerToken: 'controller',
   actionToken: 'action'
-};
+}
 
 module.exports = (options = {}) => {
-  const opts = Object.assign(defaultOptions, options);  
-  const mvcexpress = new MvcExpress(opts);
-  return mvcexpress;
-};
+  const opts = Object.assign(defaultOptions, options)
+  const mvcexpress = new MvcExpress(opts)
+  return mvcexpress
+}
