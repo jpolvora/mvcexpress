@@ -11,8 +11,11 @@ const defaultOptions = {
   actionToken: 'action'
 }
 
-module.exports = (options = {}) => {
+module.exports = (app, options = {}) => {
   const opts = Object.assign(defaultOptions, options)
   const mvcexpress = new MvcExpress(opts)
+  const route = `${opts.mountPath}:${opts.controllerToken}?/:${opts.actionToken}?`
+  console.log(route)
+  app.use(route, mvcexpress.handler.bind(mvcexpress))
   return mvcexpress
 }
