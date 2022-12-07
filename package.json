@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/jpolvora/mvcexpress#readme",
   "dependencies": {
-    "express": "4.16.4",
+    "express": "4.18.2",
     "mime": "^2.4.6"
   },
   "devDependencies": {
